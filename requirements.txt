@@ -1,0 +1,1 @@
+-e "pandas\nnumpy\nscikit-learn\njoblib\npytest" 
