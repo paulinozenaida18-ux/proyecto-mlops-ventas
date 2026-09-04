@@ -5,7 +5,6 @@ import joblib
 datos = pd.read_csv("data/ventas.csv")
 
 X = datos[["dia"]]
-
 y = datos["ventas"]
 
 modelo = LinearRegression()
@@ -14,4 +13,7 @@ modelo.fit(X, y)
 
 joblib.dump(modelo, "models/modelo.pkl")
 
+prediccion = modelo.predict([[12]])
+
 print("Modelo guardado")
+print(prediccion)
