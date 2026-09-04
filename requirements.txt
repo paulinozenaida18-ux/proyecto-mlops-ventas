@@ -1,5 +1,5 @@
 pandas
-nnumpy
-nscikit-learn
-njoblib
-npytest
+numpy
+scikit-learn
+joblib
+pytest
