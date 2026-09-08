@@ -32,3 +32,8 @@ jobs:
       - name: Entrenar Modelo
         run: |
           python src/train.py
+      
+      - name: construir imagen Doker
+        run: |
+          doker build -t mlops-ventas
+      
