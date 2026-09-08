@@ -35,5 +35,5 @@ jobs:
       
       - name: construir imagen Docker
         run: |
-          docker build -t mlops-ventas
+          docker build -t mlops-ventas .
       
