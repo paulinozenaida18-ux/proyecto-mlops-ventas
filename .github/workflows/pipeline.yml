@@ -33,7 +33,7 @@ jobs:
         run: |
           python src/train.py
       
-      - name: construir imagen Doker
+      - name: construir imagen Docker
         run: |
-          doker build -t mlops-ventas
+          docker build -t mlops-ventas
       
