@@ -42,5 +42,5 @@ jobs:
       - name: Construir y subir imagen Docker
         run: |
           docker build -t ${{ secrets.DOCKERHUB_USERNAME }}/mlops-ventas:latest .
-          docker push ${{ secrets.DOCKERHUB_USERNAME }}/mlops-ventas:latest
+          docker push ${{ secrets.DOCKERHUB_USERNAME }}/mlops-ventas:latest .
       
