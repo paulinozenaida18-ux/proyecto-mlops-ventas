@@ -5,5 +5,5 @@ WORKDIR /app
 COPY . .
 
 RUN pip install --no-cache-dir -r requirements.txt
-
-CMD ["python","src/train.py"]
+EXPOSE 8000
+CMD ["uvicorn","app.api:app", "--port", "8000"]
