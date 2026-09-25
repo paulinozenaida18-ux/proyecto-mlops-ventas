@@ -6,6 +6,15 @@ import time
 from datetime import datetime
 import os
 
+#.....
+from app.rag import (
+generar_respuesta_natural,
+obtener_maxima_venta,
+obtener_promedio_ventas
+)
+
+
+
 # ===================================================
 # CREACIÓN DE CARPETA DE LOGS
 # ===================================================
@@ -52,6 +61,29 @@ deploy_logger.addHandler(deploy_handler)
 
 app = FastAPI()
 
+# endpoints cambios por partes
+logging.basicConfig(level=logging.INFO)
+pred_logger = logging.getLogger(
+"predicciones"
+)
+pred_handler = logging.FileHandler(
+"logs/predicciones.log"
+)
+ pred_logger.addHandler(
+pred_handler
+)
+deploy_logger = logging.getLogger(
+"deployment"
+)
+ 
+deploy_handler = logging.FileHandler(
+"logs/deployment.log"
+)
+deploy_logger.addHandler(
+deploy_handler
+)
+
+
 # ===================================================
 # CARGAR MODELOS
 # ===================================================
@@ -92,66 +124,95 @@ return {
 }
 
 # ===================================================
+# MÉTRICAS BÁSICAS
+# ===================================================
+
+@app.get("/metrics")
+def metrics():
+
+    return {
+
+        "estado": "ok",
+
+        "modelo_activo": ACTIVE_MODEL,
+
+        "total_predicciones":
+        TOTAL_REQUESTS
+
+    }
+  # ===================================================
+# ===================================================
+# RAG - CONSULTA DE VENTAS
+# ===================================================
+
+@app.get("/consulta/{dia}")
+def consulta(dia: int):
+
+    respuesta = generar_respuesta_natural(dia)
+
+    return {
+        "respuesta": respuesta
+    }
+
+
+# ===================================================
+# RAG - MAYOR VENTA
+# ===================================================
+
+@app.get("/max-ventas")
+def max_ventas():
+
+    resultado = obtener_maxima_venta()
+
+    return {
+        "mensaje": f"El día con mayores ventas fue {resultado['dia']}",
+        "ventas": resultado["ventas"]
+    }
+
+
+# ===================================================
+# RAG - PROMEDIO DE VENTAS
+# ===================================================
+
+@app.get("/promedio-ventas")
+def promedio_ventas():
+
+    promedio = obtener_promedio_ventas()
+
+    return {
+        "promedio": promedio
+    }
+# ===================================================
 # PREDICCIONES
 # ===================================================
 
 @app.post("/predict")
 def predict(datos: Entrada):
-
-global TOTAL_REQUESTS
-
-TOTAL_REQUESTS += 1
-
-# Medición de latencia
-
-tiempo_inicio = time.time()
-
-# Seleccionar modelo activo
-
+ inicio = time.time()
 if ACTIVE_MODEL == "BLUE":
-
 resultado = modelo_blue.predict(
 [[datos.dia]]
 )
-
 else:
-
 resultado = modelo_green.predict(
 [[datos.dia]]
 )
-
-tiempo_fin = time.time()
-
-latencia = tiempo_fin - tiempo_inicio
-
-prediccion = float(resultado[0])
-
-# Registrar en logs
-
+fin = time.time()
+latencia = fin - inicio
+return {
+"modelo": ACTIVE_MODEL,
+"dia": datos.dia,
+"prediccion": float(resultado[0]),
+"latencia": latencia
+}
+# latencia:
 pred_logger.info(
-
 f"{datetime.now()} | "
 f"Modelo={ACTIVE_MODEL} | "
-f"Dia={datos.dia} | "
-f"Prediccion={prediccion:.2f} | "
-f"Latencia={latencia:.6f}"
-
+ f"Dia={datos.dia} | "
+f"Prediccion={float(resultado[0])} | "
+f"Latencia={latencia}"
 )
-
-return {
-
-"modelo_utilizado": ACTIVE_MODEL,
-
-"dia": datos.dia,
-
-"prediccion": prediccion,
-
-"latencia_segundos": round(
-latencia,
-6
-)
-
-}
 
 # ===================================================
 # BLUE-GREEN DEPLOYMENT
@@ -159,29 +220,25 @@ latencia,
 
 @app.put("/switch/{color}")
 def switch_model(color: str):
-
 global ACTIVE_MODEL
-
 color = color.upper()
-
-if color not in ["BLUE", "GREEN"\]:
-
+if color not in ["BLUE","GREEN"\]:
 return {
 "error":
-"Debe elegir BLUE o GREEN"
+"Color inválido"
 }
-
 modelo_anterior = ACTIVE_MODEL
-
 ACTIVE_MODEL = color
-
 deploy_logger.info(
-
 f"{datetime.now()} | "
 f"{modelo_anterior} -> "
 f"{ACTIVE_MODEL}"
-
 )
+return {
+"mensaje":
+f"Cambio realizado a {ACTIVE_MODEL}"
+}
+
 
 return {
 
