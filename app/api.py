@@ -307,7 +307,7 @@ def switch_model(color: str):
 
     color = color.upper()
 
-    if color not in ["BLUE", "GREEN"\]:
+    if color not in ["BLUE", "GREEN"]:
 
         return {
 
