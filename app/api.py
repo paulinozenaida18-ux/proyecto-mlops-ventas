@@ -3,6 +3,10 @@ import logging
 import os
 from fastapi import Depends, FastAPI
 import joblib
+import logging
+import os
+import time  # <-- Asegúrate de agregar esta línea
+from pydantic import BaseModel, Field
 from pydantic import BaseModel, Field
 
 from app.audit import registrar_evento
