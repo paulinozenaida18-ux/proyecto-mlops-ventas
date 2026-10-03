@@ -1,5 +1,5 @@
-from fastapi import FastAPI
-from pydantic import BaseModel
+from fastapi import FastAPI, Depends
+from pydantic import BaseModel, Field
 import joblib
 import logging
 import time
@@ -7,13 +7,17 @@ from datetime import datetime
 import os
 
 from app.rag import (
-    generar_respuesta_natural,
-    obtener_maxima_venta,
-    obtener_promedio_ventas
+generar_respuesta_natural,
+obtener_maxima_venta,
+obtener_promedio_ventas
 )
 
 from app.audit import (
-    registrar_evento
+registrar_evento
+)
+
+from app.security import (
+validar_api_key
 )
 
 # ===================================================
@@ -33,54 +37,53 @@ logging.basicConfig(level=logging.INFO)
 # --------------------------------------------
 
 pred_logger = logging.getLogger("predicciones")
-
 pred_logger.setLevel(logging.INFO)
 
 pred_handler = logging.FileHandler(
-    "logs/predicciones.log"
+"logs/predicciones.log"
 )
 
 pred_formatter = logging.Formatter(
-    "%(message)s"
+"%(message)s"
 )
 
 pred_handler.setFormatter(
-    pred_formatter
+pred_formatter
 )
 
 if not pred_logger.handlers:
-    pred_logger.addHandler(
-        pred_handler
-    )
+pred_logger.addHandler(
+pred_handler
+)
 
 # --------------------------------------------
 # LOG DE DESPLIEGUES
 # --------------------------------------------
 
 deploy_logger = logging.getLogger(
-    "deployment"
+"deployment"
 )
 
 deploy_logger.setLevel(
-    logging.INFO
+logging.INFO
 )
 
 deploy_handler = logging.FileHandler(
-    "logs/deployment.log"
+"logs/deployment.log"
 )
 
 deploy_formatter = logging.Formatter(
-    "%(message)s"
+"%(message)s"
 )
 
 deploy_handler.setFormatter(
-    deploy_formatter
+deploy_formatter
 )
 
 if not deploy_logger.handlers:
-    deploy_logger.addHandler(
-        deploy_handler
-    )
+deploy_logger.addHandler(
+deploy_handler
+)
 
 # ===================================================
 # FASTAPI
@@ -93,11 +96,11 @@ app = FastAPI()
 # ===================================================
 
 modelo_blue = joblib.load(
-    "models/modelo.pkl"
+"models/modelo.pkl"
 )
 
 modelo_green = joblib.load(
-    "models/modelo_nuevo.pkl"
+"models/modelo_nuevo.pkl"
 )
 
 # ===================================================
@@ -114,7 +117,11 @@ TOTAL_REQUESTS = 0
 
 class Entrada(BaseModel):
 
-    dia: int
+dia: int = Field(
+gt=0,
+le=365,
+description="Día válido"
+)
 
 # ===================================================
 # ESTADO DE LA API
@@ -123,15 +130,15 @@ class Entrada(BaseModel):
 @app.get("/")
 def inicio():
 
-    return {
+return {
 
-        "estado":
-        "activo",
+"estado":
+"activo",
 
-        "modelo_activo":
-        ACTIVE_MODEL
+"modelo_activo":
+ACTIVE_MODEL
 
-    }
+}
 
 # ===================================================
 # MÉTRICAS
@@ -140,161 +147,189 @@ def inicio():
 @app.get("/metrics")
 def metrics():
 
-    return {
+return {
 
-        "estado":
-        "ok",
+"estado":
+"ok",
 
-        "modelo_activo":
-        ACTIVE_MODEL,
+"modelo_activo":
+ACTIVE_MODEL,
 
-        "total_predicciones":
-        TOTAL_REQUESTS
+"total_predicciones":
+TOTAL_REQUESTS
 
-    }
+}
 
 # ===================================================
 # RAG - CONSULTA DE VENTAS
 # ===================================================
 
 @app.get("/consulta/{dia}")
-def consulta(dia: int):
+def consulta(
 
-    respuesta = generar_respuesta_natural(
-        dia
-    )
+dia: int,
 
-    registrar_evento(
-        "CONSULTA_RAG",
-        f"Dia={dia}"
-    )
+autorizado: bool = Depends(
+validar_api_key
+)
 
-    return {
+):
 
-        "respuesta":
-        respuesta
+respuesta = generar_respuesta_natural(
+dia
+)
 
-    }
+registrar_evento(
+"CONSULTA_RAG",
+f"Dia={dia}"
+)
+
+return {
+
+"respuesta":
+respuesta
+
+}
 
 # ===================================================
 # RAG - MAYOR VENTA
 # ===================================================
 
 @app.get("/max-ventas")
-def max_ventas():
+def max_ventas(
 
-    resultado = obtener_maxima_venta()
+autorizado: bool = Depends(
+validar_api_key
+)
 
-    registrar_evento(
-        "CONSULTA_MAX_VENTAS",
-        f"Resultado={resultado}"
-    )
+):
 
-    return {
+resultado = obtener_maxima_venta()
 
-        "mensaje":
-        f"El día con mayores ventas fue {resultado['dia']}",
+registrar_evento(
+"CONSULTA_MAX_VENTAS",
+str(resultado)
+)
 
-        "ventas":
-        resultado["ventas"]
+return {
 
-    }
+"mensaje":
+f"El día con mayores ventas fue {resultado['dia']}",
+
+"ventas":
+resultado["ventas"]
+
+}
 
 # ===================================================
 # RAG - PROMEDIO DE VENTAS
 # ===================================================
 
 @app.get("/promedio-ventas")
-def promedio_ventas():
+def promedio_ventas(
 
-    promedio = obtener_promedio_ventas()
+autorizado: bool = Depends(
+validar_api_key
+)
 
-    registrar_evento(
-        "CONSULTA_PROMEDIO",
-        f"Promedio={promedio}"
-    )
+):
 
-    return {
+promedio = obtener_promedio_ventas()
 
-        "promedio":
-        promedio
+registrar_evento(
+"CONSULTA_PROMEDIO",
+f"Promedio={promedio}"
+)
 
-    }
+return {
+
+"promedio":
+promedio
+
+}
 
 # ===================================================
 # PREDICCIONES
 # ===================================================
 
 @app.post("/predict")
-def predict(datos: Entrada):
+def predict(
 
-    global TOTAL_REQUESTS
+datos: Entrada,
 
-    TOTAL_REQUESTS += 1
+autorizado: bool = Depends(
+validar_api_key
+)
 
-    inicio = time.time()
+):
 
-    if ACTIVE_MODEL == "BLUE":
+global TOTAL_REQUESTS
 
-        resultado = modelo_blue.predict(
-            [[datos.dia]]
-        )
+TOTAL_REQUESTS += 1
 
-    else:
+inicio = time.time()
 
-        resultado = modelo_green.predict(
-            [[datos.dia]]
-        )
+if ACTIVE_MODEL == "BLUE":
 
-    fin = time.time()
+resultado = modelo_blue.predict(
+[[datos.dia]]
+)
 
-    latencia = fin - inicio
+else:
 
-    prediccion_valor = float(
-        resultado[0]
-    )
+resultado = modelo_green.predict(
+[[datos.dia]]
+)
 
-    pred_logger.info(
+fin = time.time()
 
-        f"{datetime.now()} | "
+latencia = fin - inicio
 
-        f"Modelo={ACTIVE_MODEL} | "
+prediccion_valor = float(
+resultado[0]
+)
 
-        f"Dia={datos.dia} | "
+pred_logger.info(
 
-        f"Prediccion={prediccion_valor} | "
+f"{datetime.now()} | "
 
-        f"Latencia={latencia}"
+f"Modelo={ACTIVE_MODEL} | "
 
-    )
+f"Dia={datos.dia} | "
 
-    registrar_evento(
+f"Prediccion={prediccion_valor} | "
 
-        "PREDICCION",
+f"Latencia={latencia}"
 
-        f"Modelo={ACTIVE_MODEL}, "
+)
 
-        f"Dia={datos.dia}, "
+registrar_evento(
 
-        f"Prediccion={prediccion_valor}"
+"PREDICCION",
 
-    )
+f"Modelo={ACTIVE_MODEL}, "
 
-    return {
+f"Dia={datos.dia}, "
 
-        "modelo":
-        ACTIVE_MODEL,
+f"Prediccion={prediccion_valor}"
 
-        "dia":
-        datos.dia,
+)
 
-        "prediccion":
-        prediccion_valor,
+return {
 
-        "latencia":
-        latencia
+"modelo":
+ACTIVE_MODEL,
 
-    }
+"dia":
+datos.dia,
+
+"prediccion":
+prediccion_valor,
+
+"latencia":
+latencia
+
+}
 
 # ===================================================
 # BLUE-GREEN DEPLOYMENT
@@ -303,77 +338,77 @@ def predict(datos: Entrada):
 @app.put("/switch/{color}")
 def switch_model(color: str):
 
-    global ACTIVE_MODEL
+global ACTIVE_MODEL
 
-    color = color.upper()
+color = color.upper()
 
-    if color not in ["BLUE", "GREEN"]:
+if color not in ["BLUE", "GREEN"]:
 
-        return {
+return {
 
-            "error":
-            "Color inválido"
+"error":
+"Color inválido"
 
-        }
+}
 
-    modelo_anterior = ACTIVE_MODEL
+modelo_anterior = ACTIVE_MODEL
 
-    ACTIVE_MODEL = color
+ACTIVE_MODEL = color
 
-    registrar_evento(
+registrar_evento(
 
-        "CAMBIO_MODELO",
+"CAMBIO_MODELO",
 
-        f"{modelo_anterior}->{ACTIVE_MODEL}"
+f"{modelo_anterior}->{ACTIVE_MODEL}"
 
-    )
+)
 
-    deploy_logger.info(
+deploy_logger.info(
 
-        f"{datetime.now()} | "
+f"{datetime.now()} | "
 
-        f"{modelo_anterior} -> "
+f"{modelo_anterior} -> "
 
-        f"{ACTIVE_MODEL}"
+f"{ACTIVE_MODEL}"
 
-    )
+)
 
-    return {
+return {
 
-        "mensaje":
-        f"Producción ahora usa {ACTIVE_MODEL}"
+"mensaje":
+f"Producción ahora usa {ACTIVE_MODEL}"
 
-    }
+}
 
 # ===================================================
-# RECARGA DE MODELOS
+# RECARGAR MODELOS
 # ===================================================
 
 @app.put("/reload-model")
 def reload_model():
 
-    global modelo_blue
-    global modelo_green
+global modelo_blue
+global modelo_green
 
-    modelo_blue = joblib.load(
-        "models/modelo.pkl"
-    )
+modelo_blue = joblib.load(
+"models/modelo.pkl"
+)
 
-    modelo_green = joblib.load(
-        "models/modelo_nuevo.pkl"
-    )
+modelo_green = joblib.load(
+"models/modelo_nuevo.pkl"
+)
 
-    registrar_evento(
-        "RELOAD_MODELOS",
-        "Modelos recargados"
-    )
+registrar_evento(
+"RELOAD_MODELOS",
+"Modelos recargados"
+)
 
-    return {
+return {
 
-        "mensaje":
-        "Modelos recargados exitosamente"
+"mensaje":
+"Modelos recargados exitosamente"
 
-    }
+}
 
 # ===================================================
 # INFORMACIÓN DEL MODELO
@@ -382,26 +417,23 @@ def reload_model():
 @app.get("/modelo-info")
 def modelo_info():
 
-    registrar_evento(
+registrar_evento(
+"CONSULTA_MODELO",
+ACTIVE_MODEL
+)
 
-        "CONSULTA_MODELO",
+return {
 
-        ACTIVE_MODEL
+"modelo_activo":
+ACTIVE_MODEL,
 
-    )
+"version_blue":
+"LinearRegression",
 
-    return {
+"version_green":
+"DecisionTreeRegressor"
 
-        "modelo_activo":
-        ACTIVE_MODEL,
-
-        "version_blue":
-        "LinearRegression",
-
-        "version_green":
-        "DecisionTreeRegressor"
-
-    }
+}
 
 # ===================================================
 # GOBERNANZA IA
@@ -410,29 +442,57 @@ def modelo_info():
 @app.get("/governance")
 def governance():
 
-    registrar_evento(
+registrar_evento(
+"CONSULTA_GOVERNANCE",
+ACTIVE_MODEL
+)
 
-        "CONSULTA_GOVERNANCE",
+return {
 
-        ACTIVE_MODEL
+"cumple_auditoria":
+True,
 
-    )
+"logging":
+True,
 
-    return {
+"trazabilidad":
+True,
 
-        "cumple_auditoria":
-        True,
+"modelo_activo":
+ACTIVE_MODEL
 
-        "logging":
-        True,
+}
 
-        "trazabilidad":
-        True,
+# ===================================================
+# ESTADO DE SEGURIDAD
+# ===================================================
 
-        "modelo_activo":
-        ACTIVE_MODEL
+@app.get("/security-status")
+def security_status():
 
-    }
+registrar_evento(
+"CONSULTA_SEGURIDAD",
+ACTIVE_MODEL
+)
+
+return {
+
+"api_key":
+True,
+
+"input_validation":
+True,
+
+"audit":
+True,
+
+"monitoring":
+True,
+
+"modelo_activo":
+ACTIVE_MODEL
+
+}
 
 # ===================================================
 # RESET
@@ -441,18 +501,18 @@ def governance():
 @app.delete("/reset")
 def reset_service():
 
-    global TOTAL_REQUESTS
+global TOTAL_REQUESTS
 
-    TOTAL_REQUESTS = 0
+TOTAL_REQUESTS = 0
 
-    registrar_evento(
-        "RESET",
-        "Contador reiniciado"
-    )
+registrar_evento(
+"RESET",
+"Contador reiniciado"
+)
 
-    return {
+return {
 
-        "mensaje":
-        "Recursos reiniciados correctamente"
+"mensaje":
+"Recursos reiniciados correctamente"
 
-    }
+}
