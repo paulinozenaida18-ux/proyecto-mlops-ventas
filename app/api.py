@@ -52,10 +52,9 @@ pred_formatter
 )
 
 if not pred_logger.handlers:
-pred_logger.addHandler(
-pred_handler
-)
-
+    pred_logger.addHandler(
+        pred_handler
+    )
 # --------------------------------------------
 # LOG DE DESPLIEGUES
 # --------------------------------------------
