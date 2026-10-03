@@ -115,11 +115,11 @@ TOTAL_REQUESTS = 0
 
 class Entrada(BaseModel):
 
-dia: int = Field(
-gt=0,
-le=365,
-description="Día válido"
-)
+    dia: int = Field(
+        gt=0,
+        le=365,
+        description="Día válido"
+    )
 
 # ===================================================
 # ESTADO DE LA API
