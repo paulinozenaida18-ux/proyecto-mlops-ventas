@@ -79,7 +79,7 @@ deploy_handler.setFormatter(
 deploy_formatter
 )
 
- if not pred_logger.handlers:
+if not pred_logger.handlers:
     pred_logger.addHandler(
         pred_handler
     )
