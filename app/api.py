@@ -128,15 +128,13 @@ class Entrada(BaseModel):
 @app.get("/")
 def inicio():
 
-return {
+    return {
 
-"estado":
-"activo",
+        "estado": "activo",
 
-"modelo_activo":
-ACTIVE_MODEL
+        "modelo_activo": ACTIVE_MODEL
 
-}
+    }
 
 # ===================================================
 # MÉTRICAS
