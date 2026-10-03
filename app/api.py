@@ -79,11 +79,10 @@ deploy_handler.setFormatter(
 deploy_formatter
 )
 
-if not deploy_logger.handlers:
-deploy_logger.addHandler(
-deploy_handler
-)
-
+ if not pred_logger.handlers:
+    pred_logger.addHandler(
+        pred_handler
+    )
 # ===================================================
 # FASTAPI
 # ===================================================
