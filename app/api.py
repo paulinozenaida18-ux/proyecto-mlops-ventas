@@ -161,21 +161,21 @@ def metrics():
 @app.get("/consulta/{dia}")
 def consulta(
 
-dia: int,
+    dia: int,
 
-autorizado: bool = Depends(
-validar_api_key
+    autorizado: bool = Depends(
+        validar_api_key
 )
 
 ):
 
 respuesta = generar_respuesta_natural(
-dia
+    dia
 )
 
 registrar_evento(
-"CONSULTA_RAG",
-f"Dia={dia}"
+    "CONSULTA_RAG",
+    f"Dia={dia}"
 )
 
 return {
@@ -192,8 +192,8 @@ return {
 @app.get("/max-ventas")
 def max_ventas(
 
-autorizado: bool = Depends(
-validar_api_key
+    autorizado: bool = Depends(
+    validar_api_key
 )
 
 ):
@@ -201,17 +201,17 @@ validar_api_key
 resultado = obtener_maxima_venta()
 
 registrar_evento(
-"CONSULTA_MAX_VENTAS",
-str(resultado)
+    "CONSULTA_MAX_VENTAS",
+    str(resultado)
 )
 
 return {
 
-"mensaje":
-f"El día con mayores ventas fue {resultado['dia']}",
-
-"ventas":
-resultado["ventas"]
+    "mensaje":
+    f"El día con mayores ventas fue {resultado['dia']}",
+    
+    "ventas":
+    resultado["ventas"]
 
 }
 
@@ -222,8 +222,8 @@ resultado["ventas"]
 @app.get("/promedio-ventas")
 def promedio_ventas(
 
-autorizado: bool = Depends(
-validar_api_key
+    autorizado: bool = Depends(
+    validar_api_key
 )
 
 ):
@@ -231,14 +231,14 @@ validar_api_key
 promedio = obtener_promedio_ventas()
 
 registrar_evento(
-"CONSULTA_PROMEDIO",
-f"Promedio={promedio}"
+    "CONSULTA_PROMEDIO",
+    f"Promedio={promedio}"
 )
 
 return {
 
-"promedio":
-promedio
+    "promedio":
+    promedio
 
 }
 
@@ -249,10 +249,10 @@ promedio
 @app.post("/predict")
 def predict(
 
-datos: Entrada,
-
-autorizado: bool = Depends(
-validar_api_key
+    datos: Entrada,
+    
+    autorizado: bool = Depends(
+    validar_api_key
 )
 
 ):
@@ -265,14 +265,14 @@ inicio = time.time()
 
 if ACTIVE_MODEL == "BLUE":
 
-resultado = modelo_blue.predict(
-[[datos.dia]]
+    resultado = modelo_blue.predict(
+    [[datos.dia]]
 )
 
 else:
 
-resultado = modelo_green.predict(
-[[datos.dia]]
+    resultado = modelo_green.predict(
+    [[datos.dia]]
 )
 
 fin = time.time()
@@ -280,48 +280,48 @@ fin = time.time()
 latencia = fin - inicio
 
 prediccion_valor = float(
-resultado[0]
+    resultado[0]
 )
 
 pred_logger.info(
 
-f"{datetime.now()} | "
-
-f"Modelo={ACTIVE_MODEL} | "
-
-f"Dia={datos.dia} | "
-
-f"Prediccion={prediccion_valor} | "
-
-f"Latencia={latencia}"
+    f"{datetime.now()} | "
+    
+    f"Modelo={ACTIVE_MODEL} | "
+    
+    f"Dia={datos.dia} | "
+    
+    f"Prediccion={prediccion_valor} | "
+    
+    f"Latencia={latencia}"
 
 )
 
 registrar_evento(
 
-"PREDICCION",
-
-f"Modelo={ACTIVE_MODEL}, "
-
-f"Dia={datos.dia}, "
-
-f"Prediccion={prediccion_valor}"
+    "PREDICCION",
+    
+    f"Modelo={ACTIVE_MODEL}, "
+    
+    f"Dia={datos.dia}, "
+    
+    f"Prediccion={prediccion_valor}"
 
 )
 
 return {
 
-"modelo":
-ACTIVE_MODEL,
-
-"dia":
-datos.dia,
-
-"prediccion":
-prediccion_valor,
-
-"latencia":
-latencia
+    "modelo":
+    ACTIVE_MODEL,
+    
+    "dia":
+    datos.dia,
+    
+    "prediccion":
+    prediccion_valor,
+    
+    "latencia":
+    latencia
 
 }
 
@@ -351,9 +351,9 @@ ACTIVE_MODEL = color
 
 registrar_evento(
 
-"CAMBIO_MODELO",
-
-f"{modelo_anterior}->{ACTIVE_MODEL}"
+    "CAMBIO_MODELO",
+    
+    f"{modelo_anterior}->{ACTIVE_MODEL}"
 
 )
 
@@ -369,8 +369,8 @@ f"{ACTIVE_MODEL}"
 
 return {
 
-"mensaje":
-f"Producción ahora usa {ACTIVE_MODEL}"
+    "mensaje":
+    f"Producción ahora usa {ACTIVE_MODEL}"
 
 }
 
@@ -385,22 +385,22 @@ global modelo_blue
 global modelo_green
 
 modelo_blue = joblib.load(
-"models/modelo.pkl"
+    "models/modelo.pkl"
 )
 
 modelo_green = joblib.load(
-"models/modelo_nuevo.pkl"
+    "models/modelo_nuevo.pkl"
 )
 
 registrar_evento(
-"RELOAD_MODELOS",
-"Modelos recargados"
+    "RELOAD_MODELOS",
+    "Modelos recargados"
 )
 
 return {
 
-"mensaje":
-"Modelos recargados exitosamente"
+    "mensaje":
+    "Modelos recargados exitosamente"
 
 }
 
@@ -412,20 +412,20 @@ return {
 def modelo_info():
 
 registrar_evento(
-"CONSULTA_MODELO",
-ACTIVE_MODEL
+    "CONSULTA_MODELO",
+    ACTIVE_MODEL
 )
 
 return {
 
-"modelo_activo":
-ACTIVE_MODEL,
-
-"version_blue":
-"LinearRegression",
-
-"version_green":
-"DecisionTreeRegressor"
+    "modelo_activo":
+    ACTIVE_MODEL,
+    
+    "version_blue":
+    "LinearRegression",
+    
+    "version_green":
+    "DecisionTreeRegressor"
 
 }
 
@@ -437,23 +437,23 @@ ACTIVE_MODEL,
 def governance():
 
 registrar_evento(
-"CONSULTA_GOVERNANCE",
-ACTIVE_MODEL
+    "CONSULTA_GOVERNANCE",
+    ACTIVE_MODEL
 )
 
 return {
 
-"cumple_auditoria":
-True,
-
-"logging":
-True,
-
-"trazabilidad":
-True,
-
-"modelo_activo":
-ACTIVE_MODEL
+    "cumple_auditoria":
+    True,
+    
+    "logging":
+    True,
+    
+    "trazabilidad":
+    True,
+    
+    "modelo_activo":
+    ACTIVE_MODEL
 
 }
 
@@ -465,26 +465,26 @@ ACTIVE_MODEL
 def security_status():
 
 registrar_evento(
-"CONSULTA_SEGURIDAD",
-ACTIVE_MODEL
+    "CONSULTA_SEGURIDAD",
+    ACTIVE_MODEL
 )
 
 return {
 
-"api_key":
-True,
-
-"input_validation":
-True,
-
-"audit":
-True,
-
-"monitoring":
-True,
-
-"modelo_activo":
-ACTIVE_MODEL
+    "api_key":
+    True,
+    
+    "input_validation":
+    True,
+    
+    "audit":
+    True,
+    
+    "monitoring":
+    True,
+    
+    "modelo_activo":
+    ACTIVE_MODEL
 
 }
 
@@ -500,13 +500,13 @@ global TOTAL_REQUESTS
 TOTAL_REQUESTS = 0
 
 registrar_evento(
-"RESET",
-"Contador reiniciado"
+    "RESET",
+    "Contador reiniciado"
 )
 
 return {
 
-"mensaje":
-"Recursos reiniciados correctamente"
+    "mensaje":
+    "Recursos reiniciados correctamente"
 
 }
