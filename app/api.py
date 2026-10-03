@@ -143,18 +143,16 @@ def inicio():
 @app.get("/metrics")
 def metrics():
 
-return {
+    return {
 
-"estado":
-"ok",
+        "estado": "ok",
 
-"modelo_activo":
-ACTIVE_MODEL,
+        "modelo_activo": ACTIVE_MODEL,
 
-"total_predicciones":
-TOTAL_REQUESTS
+        "total_predicciones": TOTAL_REQUESTS
 
-}
+    }
+
 
 # ===================================================
 # RAG - CONSULTA DE VENTAS
@@ -182,8 +180,8 @@ f"Dia={dia}"
 
 return {
 
-"respuesta":
-respuesta
+    "respuesta":
+    respuesta
 
 }
 
