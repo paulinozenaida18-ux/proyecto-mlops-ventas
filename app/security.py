@@ -5,7 +5,7 @@ from app.audit import registrar_evento
 # API KEY DEL SISTEMA
 # ===================================================
 
-API_KEY = "UMA-IA-2026"
+API_KEY = "UMA"
 
 # ===================================================
 # VALIDAR API KEY
